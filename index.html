@@ -229,7 +229,7 @@
           <button class="btn btn-secondary" onclick="openProfileModal(currentDeck[0])">プロフィールを見る</button>
         </div>
         <div class="stats">
-          <div class="stat"><b id="statProfiles">9</b><span>おすすめプロフィール</span></div>
+        <div class="stat"><b id="statProfiles">12</b><span>おすすめプロフィール</span></div>
           <div class="stat"><b id="statLikes">0</b><span>あなたが送ったいいね数</span></div>
           <div class="stat"><b id="statMatches">0</b><span>マッチ成立数</span></div>
         </div>
@@ -453,6 +453,27 @@
         desc:'小さな積み重ねを大事にするTAISEI。筋トレも仕事も、コツコツ型。恋愛もちゃんと向き合いたい。',
         traits:['継続力','誠実','前向き','自己管理'],
         opener:'お互いの目標、応援し合えたら最高。'
+      },
+      {
+        id:'beauty-1', name:'美意識たいせい', age:22, city:'東京', photo:'beauty-taisei.jpg', mood:'美容',
+        tag:'✨ 美意識', short:'肌にも気分にも、ちょっと丁寧に。',
+        desc:'スキンケア中だって自分らしさ全開。身だしなみを整える時間も、誰かと笑い合う時間も大切にするたいせい。美容の話はもちろん、お互いの好きなものを気軽に話したい。',
+        traits:['スキンケア','清潔感','セルフケア','ユーモア'],
+        opener:'最近、続けてよかったことってある？ 俺はスキンケアかな。'
+      },
+      {
+        id:'hinata-1', name:'日向たいせい', age:22, city:'東京', photo:'hinata-taisei.png', mood:'スポーツ',
+        tag:'🏐 ジャンプ', short:'目線はいつも、少し高いところへ。',
+        desc:'高く跳ぶためなら何度だって挑戦。ジャンプの一瞬に全力を注ぐ、元気いっぱいのたいせい。スポーツの話も、頑張っていることの話も大歓迎。',
+        traits:['ジャンプ','バレー','挑戦','元気'],
+        opener:'高く跳べた瞬間って最高！ 最近、夢中になってることある？'
+      },
+      {
+        id:'kanto-1', name:'たいせい（関東地方の姿）', age:22, city:'関東', photo:'kanto-taisei.jpg', mood:'冒険',
+        tag:'🔥 関東地方の姿', short:'屋根の上から、今日も冒険の気配。',
+        desc:'関東で見つかった、ちょっと不思議なたいせいの姿。赤い屋根の上が定位置。新しい景色を探すのが好きで、気になる場所があればすぐに話が弾む。',
+        traits:['冒険','屋根の上','好奇心','炎タイプ気分'],
+        opener:'次の冒険先、どこにする？ 近場でも知らない景色がありそう。'
       }
     ];
 
@@ -464,8 +485,9 @@
     let swipeCount = 0;
     let revealShown = false;
     const chatState = {};
+    const conversationState = {};
 
-    const filterOptions = ['全部','ごはん','飲み','筋トレ'];
+    const filterOptions = ['全部','ごはん','飲み','筋トレ','美容','スポーツ','冒険'];
     const filterBar = document.getElementById('filterBar');
     const cardStage = document.getElementById('cardStage');
     const likesGrid = document.getElementById('likesGrid');
@@ -559,8 +581,7 @@
         if(!matches.find(x => x.id === top.id)){
           matches.unshift(top);
           chatState[top.id] = chatState[top.id] || [
-            {from:'them', text: top.opener},
-            {from:'them', text: 'マッチありがとう。どのTAISEIが一番気になった？'}
+            {from:'them', text: top.opener}
           ];
           openMatchModal(top);
         } else {
@@ -689,35 +710,97 @@
       });
       body.scrollTop = body.scrollHeight;
     }
-    function sendMessage(){
+    // The demo runs without a server. Match the user's topic before responding.
+    // Keep context separately for each profile so switching chats cannot mix replies.
+    function makeReply(profile, message, history){
+      const id = profile.id;
+      const state = conversationState[id] || (conversationState[id] = {topic:null, turns:0});
+      const t = message.trim();
+      const isQuestion = /[？?]|(なに|何|どこ|いつ|どう|好き|おすすめ|教えて|行く|飲む|食べる|してる|ですか|かな)[？?]?$/u.test(t);
+      const isNegative = /(つらい|辛い|しんどい|疲れ|悲しい|寂しい|嫌|無理|落ち込|困っ|痛い|負けた|失敗|不安)/u.test(t);
+      const topics = [
+        {key:'food', re:/(ごはん|食事|食べ|料理|ランチ|ディナー|炒飯|チャーハン|餃子|ラーメン|麺|カフェ|寿司|焼肉)/u,
+          answer:'俺は町中華とラーメンが好き。おいしい店を見つけるとすぐ行きたくなる。', ask:'最近食べておいしかったものは？'},
+        {key:'drink', re:/(飲み|お酒|ビール|居酒屋|バー|乾杯|酔|ハイボール)/u,
+          answer:'賑やかな飲み会も、ゆっくり話せる二軒目も好き。', ask:'飲むなら賑やかな店と落ち着いた店、どっちが好き？'},
+        {key:'fitness', re:/(筋トレ|ジム|運動|トレーニング|ランニング|散歩|スポーツ|背中|脚)/u,
+          answer:'ジムにはよく行くよ。頑張った後に食べるごはんも楽しみ。', ask:'最近はどんな運動をしてる？'},
+        {key:'beauty', re:/(スキンケア|美容|肌|化粧水|乳液|清潔感|身だしなみ)/u,
+          answer:'スキンケアは続けてるよ。無理なく習慣にするのが好き。', ask:'普段どんなケアをしてる？'},
+        {key:'volleyball', re:/(バレー|ハイキュー|ジャンプ|日向|跳ぶ|ジャンプ力)/u,
+          answer:'高く跳べた瞬間は最高！ バレーも見るのもやるのも楽しい。', ask:'バレーならどんなプレーが好き？'},
+        {key:'adventure', re:/(ポケモン|関東地方|冒険|屋根|ヒコザル|旅に出)/u,
+          answer:'関東の街にも、まだ知らない景色がたくさんありそう。', ask:'一緒に行くならどこを探検したい？'},
+        {key:'work', re:/(仕事|会社|営業|残業|建築|建設|現場|勉強|宅建)/u,
+          answer:'仕事では人と話して、一緒に形にしていく時間が好き。', ask:'今、どんなことを頑張ってる？'},
+        {key:'outing', re:/(旅行|登山|山|海|お出かけ|デート|行きたい|休日|週末)/u,
+          answer:'休日はおいしいものを探しながら街を歩くのが好き。', ask:'次の休みはどこに行きたい？'},
+        {key:'entertainment', re:/(映画|アニメ|漫画|音楽|ゲーム|ドラマ|パチンコ)/u,
+          answer:'面白い作品があると、見終わってから感想を話したくなる。', ask:'最近ハマってる作品は何？'}
+      ];
+      const topic = topics.find(item => item.re.test(t));
+      const previousTopic = topics.find(item => item.key === state.topic);
+      state.turns++;
+      if(topic) state.topic = topic.key;
+      if(isNegative){
+        return 'それは大変だったね。今は話を聞いてほしい？ それとも一緒に考えようか。';
+      }
+      if(/(ありがとう|ありがと)/u.test(t)) return 'こちらこそ、話してくれてありがとう。さっきの話、もう少し聞いてもいい？';
+      if(/^(こんにちは|こんばんは|おはよう|やあ|はじめまして)[！!。\s]*$/u.test(t))
+        return `こんにちは！${profile.name}だよ。今日はどんな一日だった？`;
+      if(/(名前|何歳|年齢|どこ住み|住んでる)/u.test(t))
+        return `${profile.name}、${profile.age}歳で${profile.city}にいるよ。あなたのことも教えて？`;
+      if(topic){
+        if(isQuestion) return `${topic.answer} ${topic.ask}`;
+        return `いいね、${topic.key === 'fitness' ? '運動' : topic.key === 'work' ? 'その頑張り' : 'その話'}気になる！${topic.ask}`;
+      }
+      if(/^(うん|はい|そう|いいね|もちろん|行きたい|好き)[！!。\s]*$/u.test(t) && previousTopic)
+        return `うれしい！${previousTopic.ask}`;
+      if(/^(いや|いいえ|違う|ちがう)[！!。\s]*$/u.test(t))
+        return 'そっか、決めつけちゃったね。どんな感じが好み？';
+      if(isQuestion)
+        return previousTopic ? `その話なら、${previousTopic.answer} ${previousTopic.ask}` : 'いい質問だね。もう少し詳しく教えてくれたら、ちゃんと答えたい。';
+      const excerpt = t.length > 38 ? t.slice(0,38) + '…' : t;
+      return `「${excerpt}」って話、気になる。どういうきっかけだったの？`;
+    }
+
+    async function sendMessage(){
       const input = document.getElementById('chatMessageInput');
       const text = input.value.trim();
       if(!text || !activeChatId) return;
-      chatState[activeChatId] = chatState[activeChatId] || [];
-      chatState[activeChatId].push({from:'me', text});
+      const chatId = activeChatId;
+      const profile = masterProfiles.find(p => p.id === chatId);
+      chatState[chatId] = chatState[chatId] || [];
+      chatState[chatId].push({from:'me', text});
       renderChatBody();
       input.value = '';
-      setTimeout(() => {
-        const profile = masterProfiles.find(p => p.id === activeChatId);
-        const replies = [
-          'それいいね！',
-          'わかる、それめっちゃ気になる。',
-          '今度それ一緒にやろうよ。',
-          'さすが、見る目あるね。',
-          `ちなみに今の俺は${profile ? profile.name : 'TAISEI'}モードです。`
-        ];
-        const reply = replies[Math.floor(Math.random() * replies.length)];
-        chatState[activeChatId].push({from:'them', text: reply});
+      const localReply = makeReply(profile, text, chatState[chatId]);
+      let reply = localReply;
+      try {
+        const response = await fetch('/api/chat', {
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({profileId:chatId, messages:chatState[chatId].slice(-12)})
+        });
+        if(response.ok){
+          const result = await response.json();
+          if(typeof result.reply === 'string' && result.reply.trim()) reply = result.reply.trim();
+        }
+      } catch (_) {
+        // The contextual local reply keeps the demo usable when the API is unavailable.
+      }
+      {
+        chatState[chatId].push({from:'them', text: reply});
         renderChats();
-        renderChatBody();
-      }, 700);
+        if(activeChatId === chatId) renderChatBody();
+      }
       renderChats();
     }
 
     function renderDesktopProfiles(){
       const box = document.getElementById('desktopProfiles');
       box.innerHTML = '';
-      masterProfiles.slice(0,6).forEach(profile => {
+      masterProfiles.forEach(profile => {
         const el = document.createElement('article');
         el.className = 'desk-card';
         el.innerHTML = `
