@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TAISEI — マッチングアプリ</title>
+  <meta name="description" content="気になる相手を見つけてマッチできるデモサイト" />
+  <style>
+    :root{
+      --bg:#fff7fb;
+      --panel:#ffffff;
+      --panel-2:#fff0f6;
+      --text:#17171b;
+      --muted:#787884;
+      --line:#f0d8e4;
+      --pink:#ff3f77;
+      --pink-2:#ff7ea3;
+      --blue:#5ea2ff;
+      --green:#00c389;
+      --shadow:0 20px 60px rgba(255,63,119,.15);
+      --radius:28px;
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;padding:0;background:radial-gradient(circle at top left, rgba(255,125,170,.14), transparent 28%), var(--bg); color:var(--text); font-family:-apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif;}
+    button,input,select,textarea{font:inherit}
+    a{text-decoration:none;color:inherit}
+    .hidden{display:none !important}
+    .wrap{max-width:1240px;margin:0 auto;padding:0 18px}
+
+    .site-header{
+      position:sticky;top:0;z-index:40;backdrop-filter:blur(16px);
+      background:linear-gradient(to bottom, rgba(255,247,251,.88), rgba(255,247,251,.68));
+      border-bottom:1px solid rgba(240,216,228,.7);
+    }
+    .site-header .inner{display:flex;align-items:center;justify-content:space-between;padding:16px 0;gap:20px}
+    .logo{font-size:34px;font-weight:1000;letter-spacing:-1.8px;color:var(--pink)}
+    .logo small{font-size:14px;color:#ff8cab;vertical-align:middle}
+    .top-links{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+    .chip-link{padding:11px 14px;border-radius:999px;background:rgba(255,255,255,.72);border:1px solid var(--line);font-weight:700;font-size:14px}
+    .chip-link.cta{background:linear-gradient(135deg,var(--pink),var(--pink-2));color:#fff;border:0;box-shadow:0 12px 24px rgba(255,63,119,.22)}
+
+    .hero{display:grid;grid-template-columns:1.05fr .95fr;align-items:center;gap:40px;padding:42px 0 34px}
+    .eyebrow{display:inline-block;padding:8px 12px;border-radius:999px;background:#fff;border:1px solid var(--line);font-size:13px;font-weight:900;color:var(--pink)}
+    .hero h1{font-size:clamp(44px,7vw,84px);line-height:.95;margin:16px 0 16px;letter-spacing:-.055em}
+    .hero h1 span{color:var(--pink)}
+    .hero p{font-size:clamp(17px,2vw,21px);line-height:1.8;color:#4f4f58;margin:0;max-width:680px}
+    .hero-actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:28px}
+    .btn{border:0;border-radius:999px;padding:15px 20px;font-weight:900;cursor:pointer;transition:.18s transform ease}
+    .btn:hover{transform:translateY(-2px)}
+    .btn-primary{background:linear-gradient(135deg,var(--pink),var(--pink-2));color:#fff;box-shadow:0 18px 35px rgba(255,63,119,.25)}
+    .btn-secondary{background:#fff;border:1px solid var(--line)}
+
+    .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:24px}
+    .stat{background:#fff;border:1px solid var(--line);border-radius:22px;padding:18px;box-shadow:var(--shadow)}
+    .stat b{display:block;font-size:26px;margin-bottom:4px}
+    .stat span{color:var(--muted);font-size:13px;line-height:1.4}
+
+    .app-shell{background:rgba(255,255,255,.72);border:1px solid var(--line);box-shadow:var(--shadow);border-radius:36px;padding:12px}
+    .phone{
+      width:min(420px,100%);margin:0 auto;border-radius:34px;background:#111;padding:10px;box-shadow:0 28px 90px rgba(17,17,20,.28)
+    }
+    .screen{min-height:760px;background:linear-gradient(180deg,#fff,#fff7fb);border-radius:28px;overflow:hidden;display:flex;flex-direction:column;position:relative}
+    .mobile-top{display:flex;justify-content:space-between;align-items:center;padding:16px 18px 10px}
+    .mobile-title{font-size:24px;font-weight:1000;color:var(--pink)}
+    .mobile-badge{font-size:12px;padding:7px 10px;background:#fff0f5;border-radius:999px;font-weight:800;color:var(--pink)}
+    .view{display:none;flex:1;min-height:0}
+    .view.active{display:flex;flex-direction:column}
+
+    .discover-controls{display:flex;gap:8px;padding:0 16px 14px;overflow:auto}
+    .filter-pill{white-space:nowrap;border:1px solid var(--line);background:#fff;border-radius:999px;padding:9px 14px;font-weight:800;font-size:13px;cursor:pointer}
+    .filter-pill.active{background:linear-gradient(135deg,var(--pink),var(--pink-2));color:#fff;border-color:transparent}
+
+    .stack-wrap{padding:0 14px 10px}
+    .card-stage{position:relative;height:540px}
+    .card{position:absolute;inset:0;background:#ddd;border-radius:28px;overflow:hidden;box-shadow:0 24px 48px rgba(0,0,0,.16);transform-origin:center bottom;transition:transform .28s ease, opacity .28s ease}
+    .card img{width:100%;height:100%;object-fit:cover}
+    .card::after{content:"";position:absolute;inset:42% 0 0;background:linear-gradient(transparent, rgba(0,0,0,.82))}
+    .card[data-depth="1"]{transform:translateY(10px) scale(.97);opacity:.84}
+    .card[data-depth="2"]{transform:translateY(18px) scale(.94);opacity:.56}
+    .tag{position:absolute;top:16px;left:16px;background:rgba(255,255,255,.94);backdrop-filter:blur(5px);padding:9px 12px;border-radius:999px;font-size:12px;font-weight:900;color:var(--pink);z-index:2}
+    .card-content{position:absolute;left:18px;right:18px;bottom:18px;color:#fff;z-index:2}
+    .card-content h3{display:flex;align-items:end;gap:8px;margin:0;font-size:34px;line-height:1}
+    .card-content h3 small{font-size:18px;font-weight:700;opacity:.92}
+    .card-content p{margin:8px 0 0;font-size:15px;line-height:1.55;max-width:92%}
+    .card-meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+    .pill{background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.3);backdrop-filter:blur(4px);border-radius:999px;padding:7px 10px;font-size:12px;font-weight:800}
+    .discover-actions{display:flex;justify-content:center;gap:20px;padding:12px 0 8px}
+    .action{width:60px;height:60px;border-radius:50%;border:0;background:#fff;box-shadow:0 10px 26px rgba(0,0,0,.12);font-size:24px;font-weight:900;cursor:pointer}
+    .action.like{background:linear-gradient(135deg,var(--pink),var(--pink-2));color:#fff;transform:scale(1.08)}
+    .action.super{background:linear-gradient(135deg,var(--blue),#7fb7ff);color:#fff}
+    .helper{font-size:12px;color:var(--muted);text-align:center;padding-bottom:14px}
+
+    .bottom-nav{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--line);background:rgba(255,255,255,.95)}
+    .tab-btn{border:0;background:transparent;padding:14px 6px 16px;display:flex;flex-direction:column;align-items:center;gap:4px;color:#7d7d88;font-weight:800;cursor:pointer}
+    .tab-btn.active{color:var(--pink)}
+    .tab-btn .icon{font-size:20px}
+    .tab-btn span:last-child{font-size:11px}
+
+    .panel-scroll{padding:0 14px 16px;overflow:auto;flex:1}
+    .likes-head,.list-head{display:flex;justify-content:space-between;align-items:center;padding:0 4px 12px}
+    .likes-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .mini-card{background:#fff;border:1px solid var(--line);border-radius:20px;overflow:hidden;box-shadow:var(--shadow)}
+    .mini-card img{display:block;width:100%;height:160px;object-fit:cover}
+    .mini-card .info{padding:12px}
+    .mini-card b{display:block;font-size:17px;margin-bottom:4px}
+    .mini-card span{font-size:12px;color:var(--muted)}
+
+    .chat-list{display:flex;flex-direction:column;gap:10px}
+    .chat-item{background:#fff;border:1px solid var(--line);border-radius:20px;padding:12px;display:flex;gap:12px;align-items:center;cursor:pointer;box-shadow:var(--shadow)}
+    .avatar{width:54px;height:54px;border-radius:50%;object-fit:cover;flex:0 0 auto}
+    .chat-item b{display:block;font-size:16px}
+    .chat-item span{display:block;color:var(--muted);font-size:13px;margin-top:3px}
+    .chat-time{margin-left:auto;color:#9b9ba3;font-size:12px;font-weight:700}
+
+    .chat-window{display:none;position:absolute;inset:0;background:linear-gradient(180deg,#fff,#fff7fb);z-index:18;flex-direction:column}
+    .chat-window.active{display:flex}
+    .chat-header{display:flex;align-items:center;gap:10px;padding:14px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.92)}
+    .back-btn{border:0;background:#fff;border:1px solid var(--line);width:38px;height:38px;border-radius:50%;cursor:pointer}
+    .chat-body{flex:1;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:10px}
+    .bubble{max-width:78%;padding:12px 14px;border-radius:20px;font-size:14px;line-height:1.5}
+    .bubble.them{align-self:flex-start;background:#fff;border:1px solid var(--line)}
+    .bubble.me{align-self:flex-end;background:linear-gradient(135deg,var(--pink),var(--pink-2));color:#fff}
+    .chat-input{display:flex;gap:8px;padding:12px;border-top:1px solid var(--line);background:rgba(255,255,255,.95)}
+    .chat-input input{flex:1;border:1px solid var(--line);border-radius:999px;padding:13px 15px;background:#fff}
+    .chat-input button{border:0;background:var(--pink);color:#fff;border-radius:999px;padding:0 16px;font-weight:900;cursor:pointer}
+
+    .profile-panel{padding:0 14px 18px;overflow:auto;flex:1}
+    .identity-card{background:#fff;border:1px solid var(--line);border-radius:24px;overflow:hidden;box-shadow:var(--shadow)}
+    .identity-card img{width:100%;height:230px;object-fit:cover;display:block}
+    .identity-body{padding:18px}
+    .identity-body h3{margin:0 0 8px;font-size:28px}
+    .identity-body p{margin:0;color:var(--muted);line-height:1.65}
+    .profile-stacks{display:grid;grid-template-columns:1fr;gap:12px;margin-top:14px}
+    .profile-line{background:#fff;border:1px solid var(--line);border-radius:18px;padding:14px 16px}
+    .profile-line b{display:block;margin-bottom:4px}
+    .toggle-row{display:flex;justify-content:space-between;align-items:center;gap:10px}
+    .switch{position:relative;width:54px;height:32px;display:inline-block}
+    .switch input{display:none}
+    .slider{position:absolute;inset:0;background:#ddd;border-radius:999px;cursor:pointer;transition:.2s}
+    .slider:before{content:"";position:absolute;width:24px;height:24px;left:4px;top:4px;background:#fff;border-radius:50%;transition:.2s;box-shadow:0 2px 8px rgba(0,0,0,.18)}
+    .switch input:checked + .slider{background:linear-gradient(135deg,var(--pink),var(--pink-2))}
+    .switch input:checked + .slider:before{transform:translateX(22px)}
+
+    .desktop-sections{padding:20px 0 90px}
+    .section{padding:70px 0}
+    .center{text-align:center}
+    .section h2{font-size:clamp(34px,5vw,56px);margin:8px 0 12px;letter-spacing:-.04em}
+    .section .sub{color:var(--muted);font-size:18px;line-height:1.7;max-width:760px;margin:0 auto}
+    .cards-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;margin-top:34px}
+    .desk-card{background:#fff;border:1px solid var(--line);border-radius:28px;overflow:hidden;box-shadow:var(--shadow)}
+    .desk-card img{display:block;width:100%;height:420px;object-fit:cover}
+    .desk-card .body{padding:20px}
+    .desk-card .title{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+    .desk-card h3{margin:0;font-size:28px}
+    .desk-card p{margin:0;color:var(--muted);line-height:1.65}
+    .desk-card .blue{color:var(--blue)}
+
+    .feature-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:32px}
+    .feature-box{background:#fff;border:1px solid var(--line);border-radius:22px;padding:22px;box-shadow:var(--shadow)}
+    .feature-box b{display:block;margin-bottom:8px;font-size:18px}
+    .feature-box span{display:block;color:var(--muted);line-height:1.55;font-size:14px}
+
+    .cta-band{margin-top:18px;background:linear-gradient(135deg,#ff4f7f,#ff88ab);color:#fff;border-radius:34px;padding:42px;display:grid;grid-template-columns:1fr auto;gap:20px;align-items:center;box-shadow:0 24px 60px rgba(255,63,119,.26)}
+    .cta-band h3{font-size:42px;line-height:1;margin:0 0 10px;letter-spacing:-.04em}
+    .cta-band p{margin:0;font-size:18px;opacity:.94}
+    .cta-band .btn{background:#fff;color:var(--pink)}
+
+    footer{padding:22px 0 44px;text-align:center;color:#91919a;font-size:13px}
+
+    .modal-backdrop{position:fixed;inset:0;background:rgba(17,17,23,.45);display:none;align-items:center;justify-content:center;padding:18px;z-index:60}
+    .modal-backdrop.show{display:flex}
+    .modal{width:min(540px,100%);background:#fff;border-radius:28px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,.24)}
+    .modal-header{padding:16px 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
+    .modal-header h3{margin:0;font-size:22px}
+    .modal-close{border:0;background:#fff;border:1px solid var(--line);width:38px;height:38px;border-radius:50%;cursor:pointer}
+    .modal-body{padding:18px}
+    .modal-cover{width:100%;height:220px;object-fit:cover;border-radius:18px}
+    .modal-body p{line-height:1.75;color:#555560}
+    .modal-tags{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 4px}
+
+    .toast{position:fixed;left:50%;bottom:28px;transform:translate(-50%,40px);opacity:0;pointer-events:none;background:#17171b;color:#fff;padding:14px 18px;border-radius:999px;z-index:80;font-weight:800;transition:.22s}
+    .toast.show{opacity:1;transform:translate(-50%,0)}
+
+    @media(max-width:1024px){
+      .hero{grid-template-columns:1fr;}
+      .cards-grid{grid-template-columns:1fr}
+      .feature-grid{grid-template-columns:1fr 1fr}
+      .cta-band{grid-template-columns:1fr;text-align:center}
+    }
+    @media(max-width:640px){
+      .site-header .inner{padding:12px 0}
+      .logo{font-size:29px}
+      .chip-link{font-size:13px;padding:10px 12px}
+      .stats{grid-template-columns:1fr}
+      .hero{padding-top:28px}
+      .phone{width:100%}
+      .feature-grid{grid-template-columns:1fr}
+      .likes-grid{grid-template-columns:1fr}
+      .mobile-title{font-size:22px}
+      .card-stage{height:500px}
+      .cta-band{padding:30px 24px}
+      .cta-band h3{font-size:34px}
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap inner">
+      <div class="logo">Taisei Matching <small>beta</small></div>
+      <nav class="top-links">
+        <a class="chip-link" href="#app">アプリ</a>
+        <a class="chip-link" href="#profiles">プロフィール</a>
+        <a class="chip-link" href="#features">機能</a>
+        <a class="chip-link cta" href="#cta">今すぐTAISEIとマッチ</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="hero">
+      <div>
+        <div class="eyebrow">TAISEI MATCHING</div>
+        <h1>恋を探す、<br><span>TAISEI Matching</span>。</h1>
+        <p>
+          気になる相手をスワイプして、いいね、マッチ、チャットへ。<br><strong>まずは気軽に、ひとりずつ見てみよう。</strong>
+        </p>
+        <div class="hero-actions">
+          <button class="btn btn-primary" onclick="scrollToSection('app')">今すぐ触る</button>
+          <button class="btn btn-secondary" onclick="openProfileModal(currentDeck[0])">プロフィールを見る</button>
+        </div>
+        <div class="stats">
+          <div class="stat"><b id="statProfiles">9</b><span>おすすめプロフィール</span></div>
+          <div class="stat"><b id="statLikes">0</b><span>あなたが送ったいいね数</span></div>
+          <div class="stat"><b id="statMatches">0</b><span>マッチ成立数</span></div>
+        </div>
+      </div>
+
+      <div id="app" class="app-shell">
+        <div class="phone">
+          <div class="screen">
+            <div class="mobile-top">
+              <div class="mobile-title">TAISEI</div>
+              <div class="mobile-badge">MATCHING</div>
+            </div>
+
+            <section class="view active" data-view="discover">
+              <div class="discover-controls" id="filterBar"></div>
+              <div class="stack-wrap">
+                <div class="card-stage" id="cardStage"></div>
+              </div>
+              <div class="discover-actions">
+                <button class="action" title="スキップ" onclick="swipe('skip')">✕</button>
+                <button class="action super" title="詳細" onclick="openProfileModal(currentDeck[0])">i</button>
+                <button class="action like" title="いいね" onclick="swipe('like')">♥</button>
+              </div>
+              <div class="helper">気になる相手には「いいね」。プロフィールをタップすると詳細が見られます。</div>
+            </section>
+
+            <section class="view" data-view="likes">
+              <div class="panel-scroll">
+                <div class="likes-head"><b>いいねしたTAISEI</b><span id="likesCountLabel">0件</span></div>
+                <div class="likes-grid" id="likesGrid"></div>
+              </div>
+            </section>
+
+            <section class="view" data-view="chats">
+              <div class="panel-scroll">
+                <div class="list-head"><b>マッチしたTAISEI</b><span id="matchesCountLabel">0件</span></div>
+                <div class="chat-list" id="chatList"></div>
+              </div>
+            </section>
+
+            <section class="view" data-view="profile">
+              <div class="profile-panel">
+                <div class="identity-card">
+                  <img src="fitness.jpg" alt="TAISEI">
+                  <div class="identity-body">
+                    <h3>TAISEI</h3>
+                    <p>プロフィール設定とアプリの動作確認ができます。</p>
+                  </div>
+                </div>
+                <div class="profile-stacks">
+                  <div class="profile-line">
+                    <div class="toggle-row">
+                      <div>
+                        <b>おすすめを自動補充</b>
+                        <div style="color:var(--muted);font-size:13px">オンにすると、プロフィールを見終えてもおすすめが補充されます。</div>
+                      </div>
+                      <label class="switch"><input id="infiniteToggle" type="checkbox" checked><span class="slider"></span></label>
+                    </div>
+                  </div>
+                  <div class="profile-line"><b>年齢</b><span>22歳</span></div>
+                  <div class="profile-line"><b>居住地</b><span>東京</span></div>
+                  <div class="profile-line"><b>好きなもの</b><span>炒飯 / ラーメン / 飲み会 / ジム / 笑うこと</span></div>
+                  <div class="profile-line"><b>ひとこと</b><span>「まずは気軽に話してみよう。」</span></div>
+                </div>
+              </div>
+            </section>
+
+            <div class="bottom-nav">
+              <button class="tab-btn active" data-target="discover" onclick="switchView('discover', this)"><span class="icon">🔥</span><span>さがす</span></button>
+              <button class="tab-btn" data-target="likes" onclick="switchView('likes', this)"><span class="icon">♥</span><span>いいね</span></button>
+              <button class="tab-btn" data-target="chats" onclick="switchView('chats', this)"><span class="icon">💬</span><span>チャット</span></button>
+              <button class="tab-btn" data-target="profile" onclick="switchView('profile', this)"><span class="icon">👤</span><span>プロフィール</span></button>
+            </div>
+
+            <div class="chat-window" id="chatWindow">
+              <div class="chat-header">
+                <button class="back-btn" onclick="closeChat()">‹</button>
+                <img id="chatHeaderAvatar" class="avatar" src="food.jpg" alt="avatar">
+                <div><b id="chatHeaderName">TAISEI</b><div style="font-size:12px;color:var(--muted)">オンライン</div></div>
+              </div>
+              <div class="chat-body" id="chatBody"></div>
+              <div class="chat-input">
+                <input id="chatMessageInput" type="text" placeholder="メッセージを入力...">
+                <button onclick="sendMessage()">送信</button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="profiles" class="section">
+      <div class="center">
+        <div class="eyebrow">PROFILE VARIATIONS</div>
+        <h2>おすすめプロフィール</h2>
+        <p class="sub">気になる相手を見つけたら、プロフィールをチェック。</p>
+      </div>
+      <div class="cards-grid" id="desktopProfiles"></div>
+    </section>
+
+    <section id="features" class="section center">
+      <div class="eyebrow">FEATURES</div>
+      <h2>できること</h2>
+      <p class="sub">スワイプからマッチ、チャットまでシンプルに楽しめます。</p>
+      <div class="feature-grid">
+        <div class="feature-box"><b>スワイプ体験</b><span>スキップ/いいねで次のTAISEIへ。デッキが減っても自動補充可能。</span></div>
+        <div class="feature-box"><b>いいね一覧</b><span>気になったTAISEIを一覧で保存。カードとして見返せます。</span></div>
+        <div class="feature-box"><b>マッチ & チャット</b><span>いいねで即マッチ。チャット一覧と会話画面でやり取り可能。</span></div>
+        <div class="feature-box"><b>詳細プロフィール</b><span>各TAISEIごとの紹介文・特徴・タグをモーダルで確認できます。</span></div>
+      </div>
+    </section>
+
+    <section id="cta" class="section">
+      <div class="cta-band">
+        <div>
+          <h3>準備OK。<br>いい出会いが、待っている。</h3>
+          <p>気になる相手を見つけたら、いいねから始めよう。</p>
+        </div>
+        <button class="btn" onclick="scrollToSection('app')">アプリにもどる</button>
+      </div>
+    </section>
+  </main>
+
+  <footer>© 2026 TAISEI Matching Demo.</footer>
+
+  <div class="modal-backdrop" id="profileModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="modalTitle">TAISEI</h3>
+        <button class="modal-close" onclick="closeProfileModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <img id="modalImage" class="modal-cover" src="food.jpg" alt="">
+        <div class="modal-tags" id="modalTags"></div>
+        <p id="modalText"></p>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="matchModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>🎉 マッチ成立！</h3>
+        <button class="modal-close" onclick="closeMatchModal()">✕</button>
+      </div>
+      <div class="modal-body" style="text-align:center">
+        <img id="matchImage" class="modal-cover" src="food.jpg" alt="" style="height:250px;object-position:center top">
+        <p id="matchText" style="font-size:18px;color:#333"></p>
+        <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:10px">
+          <button class="btn btn-primary" onclick="goToChatFromMatch()">チャットを開く</button>
+          <button class="btn btn-secondary" onclick="closeMatchModal()">まだ探す</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const masterProfiles = [
+      {
+        id:'rice-1', name:'ごはん好きTAISEI', age:22, city:'東京', photo:'food.jpg', mood:'ごはん',
+        tag:'🍚 ごはん好き', short:'炒飯もラーメンも、一緒に食べたい。',
+        desc:'おいしいごはんがあれば、だいたい機嫌がいいTAISEI。町中華、ラーメン、定食屋を一緒に回ってくれる人、大歓迎。食べた瞬間のリアクションは大きめ。',
+        traits:['町中華','炒飯偏愛','食べ歩き','幸せ共有'],
+        opener:'今度、好きなごはん屋さん連れてって！'
+      },
+      {
+        id:'party-1', name:'飲み会TAISEI', age:22, city:'東京', photo:'party.jpg', mood:'飲み',
+        tag:'🍻 飲み会', short:'くだらない話で笑える夜が好き。',
+        desc:'飲み会になると笑顔全開になるTAISEI。盛り上げ役も聞き役もできるタイプ。楽しく飲んで、最後はちゃんと相手を笑わせたい。',
+        traits:['お酒好き','ノリ良し','深夜トーク','笑顔つよめ'],
+        opener:'飲みながら、しょうもない話しようよ。'
+      },
+      {
+        id:'fit-1', name:'筋トレTAISEI', age:22, city:'東京', photo:'fitness.jpg', mood:'筋トレ',
+        tag:'🏋️ 筋トレ', short:'心もカラダも、いい関係で。',
+        desc:'ジムとごはんを両立したいストイックTAISEI。努力する人が好き。一緒に鍛えるのも、頑張りを褒め合うのも得意。',
+        traits:['ジム','自分磨き','継続力','健康志向'],
+        opener:'一緒に成長できる関係って、いいよね。'
+      },
+      {
+        id:'rice-2', name:'ラーメンTAISEI', age:22, city:'東京', photo:'food.jpg', mood:'ごはん',
+        tag:'🍜 ラーメン', short:'締めまで含めてデート。',
+        desc:'ごはん好きTAISEIの中でも特に麺寄り。ラーメンの湯気の向こうで恋したい。深夜の一杯も、昼の一杯も、全部ロマン。',
+        traits:['ラーメン','夜更かし','濃い味派','街ブラ'],
+        opener:'おすすめのラーメン、3つ教えて？'
+      },
+      {
+        id:'party-2', name:'しっぽりTAISEI', age:22, city:'東京', photo:'party.jpg', mood:'飲み',
+        tag:'🥃 しっぽり飲み', short:'騒ぐだけじゃなく、しっとりも可。',
+        desc:'賑やかな飲み会も好きだけど、二軒目でゆっくり語る時間も大事にしたいTAISEI。ちょっと真面目な話もできる。',
+        traits:['二軒目派','聞き上手','大人っぽい','距離感◎'],
+        opener:'最近、頑張ってることある？'
+      },
+      {
+        id:'fit-2', name:'健康志向TAISEI', age:22, city:'東京', photo:'fitness.jpg', mood:'筋トレ',
+        tag:'💪 健康第一', short:'ちゃんと寝て、ちゃんと食べたい。',
+        desc:'筋トレだけじゃなくて生活習慣そのものを整えたいTAISEI。朝活も散歩もわりと好き。長く付き合うならこういう人。',
+        traits:['朝活','散歩','筋トレ','丁寧な生活'],
+        opener:'朝の散歩デートとか、実はかなり好き。'
+      },
+      {
+        id:'rice-3', name:'食べ歩きTAISEI', age:22, city:'東京', photo:'food.jpg', mood:'ごはん',
+        tag:'🥟 食べ歩き', short:'お腹も心も満たしたい。',
+        desc:'気になる店を見つけたら入りたくなるタイプ。商店街、横丁、デパ地下、全部好き。デートは基本「食」が軸。',
+        traits:['商店街','餃子','食べ歩き','素直'],
+        opener:'一緒に次の行き先決めるの、楽しそう。'
+      },
+      {
+        id:'party-3', name:'爆笑TAISEI', age:22, city:'東京', photo:'party.jpg', mood:'飲み',
+        tag:'😂 爆笑担当', short:'笑い声、でかめです。',
+        desc:'とにかくよく笑うTAISEI。場の空気を柔らかくしたいタイプ。初対面でも変な顔で場を和ませる能力あり。',
+        traits:['爆笑','親しみやすい','ムードメーカー','距離近め'],
+        opener:'まずは笑って仲良くなろう。'
+      },
+      {
+        id:'fit-3', name:'努力家TAISEI', age:22, city:'東京', photo:'fitness.jpg', mood:'筋トレ',
+        tag:'🔥 努力家', short:'昨日の自分より、ちょっと前へ。',
+        desc:'小さな積み重ねを大事にするTAISEI。筋トレも仕事も、コツコツ型。恋愛もちゃんと向き合いたい。',
+        traits:['継続力','誠実','前向き','自己管理'],
+        opener:'お互いの目標、応援し合えたら最高。'
+      }
+    ];
+
+    let currentFilter = '全部';
+    let currentDeck = [];
+    let likes = [];
+    let matches = [];
+    let activeChatId = null;
+    let swipeCount = 0;
+    let revealShown = false;
+    const chatState = {};
+
+    const filterOptions = ['全部','ごはん','飲み','筋トレ'];
+    const filterBar = document.getElementById('filterBar');
+    const cardStage = document.getElementById('cardStage');
+    const likesGrid = document.getElementById('likesGrid');
+    const chatList = document.getElementById('chatList');
+    const toast = document.getElementById('toast');
+
+    function init(){
+      renderFilterBar();
+      rebuildDeck();
+      renderDesktopProfiles();
+      renderLikes();
+      renderChats();
+      document.getElementById('infiniteToggle').addEventListener('change', ()=>{
+        showToast(document.getElementById('infiniteToggle').checked ? 'おすすめを自動補充ON' : 'おすすめを自動補充OFF');
+      });
+      document.getElementById('chatMessageInput').addEventListener('keydown', (e)=>{
+        if(e.key === 'Enter') sendMessage();
+      });
+    }
+
+    function renderFilterBar(){
+      filterBar.innerHTML = '';
+      filterOptions.forEach(label => {
+        const btn = document.createElement('button');
+        btn.className = 'filter-pill' + (label===currentFilter ? ' active' : '');
+        btn.textContent = label;
+        btn.onclick = () => { currentFilter = label; renderFilterBar(); rebuildDeck(); };
+        filterBar.appendChild(btn);
+      });
+    }
+
+    function getFilteredProfiles(){
+      return currentFilter==='全部' ? [...masterProfiles] : masterProfiles.filter(p => p.mood===currentFilter);
+    }
+
+    function rebuildDeck(){
+      currentDeck = getFilteredProfiles();
+      renderDeck();
+      updateStats();
+    }
+
+    function ensureDeck(){
+      if(currentDeck.length === 0){
+        if(document.getElementById('infiniteToggle').checked){
+          currentDeck = getFilteredProfiles();
+          renderDeck();
+          showToast('TAISEIを補充しました');
+        } else {
+          renderDeck();
+        }
+      }
+    }
+
+    function renderDeck(){
+      cardStage.innerHTML = '';
+      const preview = currentDeck.slice(0,3);
+      if(preview.length === 0){
+        const empty = document.createElement('div');
+        empty.style.cssText='height:100%;display:grid;place-items:center;background:#fff;border:1px dashed var(--line);border-radius:28px;text-align:center;padding:24px;color:var(--muted)';
+        empty.innerHTML = '<div><div style="font-size:46px;margin-bottom:8px">😳</div><b>いま表示できるTAISEIがいません</b><div style="margin-top:6px">おすすめを自動補充をONにするか、フィルターを変えてね。</div></div>';
+        cardStage.appendChild(empty);
+        return;
+      }
+
+      preview.reverse().forEach((profile, indexRev) => {
+        const actualIndex = preview.length - 1 - indexRev;
+        const card = document.createElement('article');
+        card.className = 'card';
+        card.setAttribute('data-depth', actualIndex);
+        card.innerHTML = `
+          <img src="${profile.photo}" alt="${profile.name}">
+          <div class="tag">${profile.tag}</div>
+          <div class="card-content">
+            <h3>Taisei <small>${profile.age} / ${profile.city}</small></h3>
+            <p>${profile.short}</p>
+            <div class="card-meta">
+              ${profile.traits.slice(0,4).map(t => `<span class="pill">${t}</span>`).join('')}
+            </div>
+          </div>
+        `;
+        card.onclick = () => openProfileModal(profile);
+        cardStage.appendChild(card);
+      });
+    }
+
+    function swipe(type){
+      if(!currentDeck.length){ ensureDeck(); return; }
+      const top = currentDeck[0];
+      if(type === 'like'){
+        if(!likes.find(x => x.id === top.id)) likes.unshift(top);
+        if(!matches.find(x => x.id === top.id)){
+          matches.unshift(top);
+          chatState[top.id] = chatState[top.id] || [
+            {from:'them', text: top.opener},
+            {from:'them', text: 'マッチありがとう。どのTAISEIが一番気になった？'}
+          ];
+          openMatchModal(top);
+        } else {
+          showToast('♥ すでにマッチ済みのTAISEIです');
+        }
+      } else {
+        showToast('スキップしたけど、またどこかでTAISEIに会うかも');
+      }
+      swipeCount++;
+      if(swipeCount >= 3 && !revealShown){
+        revealShown = true;
+        setTimeout(()=>showToast('あれ…？ さっきから全員Taiseiじゃない？'), 250);
+      }
+      currentDeck.shift();
+      ensureDeck();
+      renderDeck();
+      renderLikes();
+      renderChats();
+      updateStats();
+    }
+
+    function renderLikes(){
+      likesGrid.innerHTML = '';
+      document.getElementById('likesCountLabel').textContent = `${likes.length}件`;
+      if(!likes.length){
+        likesGrid.innerHTML = '<div class="profile-line" style="grid-column:1/-1;text-align:center;color:var(--muted)">まだいいねしたTAISEIがいません。</div>';
+        return;
+      }
+      likes.forEach(item => {
+        const card = document.createElement('article');
+        card.className = 'mini-card';
+        card.innerHTML = `
+          <img src="${item.photo}" alt="${item.name}">
+          <div class="info">
+            <b>Taisei</b>
+            <span>${item.short}</span>
+          </div>`;
+        card.onclick = () => openProfileModal(item);
+        likesGrid.appendChild(card);
+      });
+    }
+
+    function renderChats(){
+      chatList.innerHTML = '';
+      document.getElementById('matchesCountLabel').textContent = `${matches.length}件`;
+      if(!matches.length){
+        chatList.innerHTML = '<div class="profile-line" style="text-align:center;color:var(--muted)">マッチしたTAISEIはまだいません。</div>';
+        return;
+      }
+      matches.forEach((item, idx) => {
+        const messages = chatState[item.id] || [];
+        const last = messages[messages.length-1]?.text || 'マッチしました';
+        const row = document.createElement('div');
+        row.className = 'chat-item';
+        row.innerHTML = `
+          <img class="avatar" src="${item.photo}" alt="${item.name}">
+          <div><b>Taisei</b><span>${last}</span></div>
+          <div class="chat-time">${idx===0?'今':'既読'}</div>
+        `;
+        row.onclick = () => openChat(item.id);
+        chatList.appendChild(row);
+      });
+    }
+
+    function updateStats(){
+      document.getElementById('statProfiles').textContent = masterProfiles.length;
+      document.getElementById('statLikes').textContent = likes.length;
+      document.getElementById('statMatches').textContent = matches.length;
+    }
+
+    function switchView(name, el){
+      document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+      document.querySelector(`.view[data-view="${name}"]`).classList.add('active');
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      if(el) el.classList.add('active');
+    }
+
+    function openProfileModal(profile){
+      if(!profile) return;
+      document.getElementById('modalTitle').textContent = `Taisei / ${profile.age}歳・${profile.city}`;
+      document.getElementById('modalImage').src = profile.photo;
+      document.getElementById('modalText').textContent = profile.desc;
+      const tags = document.getElementById('modalTags');
+      tags.innerHTML = profile.traits.map(t => `<span class="chip-link">${t}</span>`).join('');
+      document.getElementById('profileModal').classList.add('show');
+    }
+    function closeProfileModal(){ document.getElementById('profileModal').classList.remove('show'); }
+
+    function openMatchModal(profile){
+      document.getElementById('matchImage').src = profile.photo;
+      document.getElementById('matchText').textContent = `あなたと ${profile.name} がマッチしました。\nこのままチャットを始められます。`;
+      document.getElementById('matchModal').dataset.matchId = profile.id;
+      document.getElementById('matchModal').classList.add('show');
+    }
+    function closeMatchModal(){ document.getElementById('matchModal').classList.remove('show'); }
+    function goToChatFromMatch(){
+      const id = document.getElementById('matchModal').dataset.matchId;
+      closeMatchModal();
+      const btn = document.querySelector('.tab-btn[data-target="chats"]');
+      switchView('chats', btn);
+      openChat(id);
+    }
+
+    function openChat(id){
+      const profile = matches.find(m => m.id === id);
+      if(!profile) return;
+      activeChatId = id;
+      document.getElementById('chatHeaderAvatar').src = profile.photo;
+      document.getElementById('chatHeaderName').textContent = 'Taisei';
+      renderChatBody();
+      document.getElementById('chatWindow').classList.add('active');
+    }
+    function closeChat(){
+      document.getElementById('chatWindow').classList.remove('active');
+      activeChatId = null;
+    }
+    function renderChatBody(){
+      const body = document.getElementById('chatBody');
+      body.innerHTML = '';
+      const messages = chatState[activeChatId] || [];
+      messages.forEach(msg => {
+        const div = document.createElement('div');
+        div.className = 'bubble ' + (msg.from === 'me' ? 'me' : 'them');
+        div.textContent = msg.text;
+        body.appendChild(div);
+      });
+      body.scrollTop = body.scrollHeight;
+    }
+    function sendMessage(){
+      const input = document.getElementById('chatMessageInput');
+      const text = input.value.trim();
+      if(!text || !activeChatId) return;
+      chatState[activeChatId] = chatState[activeChatId] || [];
+      chatState[activeChatId].push({from:'me', text});
+      renderChatBody();
+      input.value = '';
+      setTimeout(() => {
+        const profile = masterProfiles.find(p => p.id === activeChatId);
+        const replies = [
+          'それいいね！',
+          'わかる、それめっちゃ気になる。',
+          '今度それ一緒にやろうよ。',
+          'さすが、見る目あるね。',
+          `ちなみに今の俺は${profile ? profile.name : 'TAISEI'}モードです。`
+        ];
+        const reply = replies[Math.floor(Math.random() * replies.length)];
+        chatState[activeChatId].push({from:'them', text: reply});
+        renderChats();
+        renderChatBody();
+      }, 700);
+      renderChats();
+    }
+
+    function renderDesktopProfiles(){
+      const box = document.getElementById('desktopProfiles');
+      box.innerHTML = '';
+      masterProfiles.slice(0,6).forEach(profile => {
+        const el = document.createElement('article');
+        el.className = 'desk-card';
+        el.innerHTML = `
+          <img src="${profile.photo}" alt="${profile.name}">
+          <div class="body">
+            <div class="title">
+              <h3>Taisei</h3>
+              <span class="chip-link">${profile.tag}</span>
+            </div>
+            <p>${profile.desc}</p>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">${profile.traits.map(t => `<span class="chip-link">${t}</span>`).join('')}</div>
+            <div style="margin-top:16px"><button class="btn btn-primary" onclick='openProfileModal(${JSON.stringify(profile).replace(/'/g, "&#39;")})'>詳細を見る</button></div>
+          </div>
+        `;
+        // safer event binding:
+        el.querySelector('button').onclick = () => openProfileModal(profile);
+        box.appendChild(el);
+      });
+    }
+
+    function showToast(message){
+      toast.textContent = message;
+      toast.classList.add('show');
+      clearTimeout(window.__toastTimer);
+      window.__toastTimer = setTimeout(() => toast.classList.remove('show'), 1700);
+    }
+
+    function scrollToSection(id){
+      document.getElementById(id).scrollIntoView({behavior:'smooth', block:'start'});
+    }
+
+    window.onclick = function(e){
+      if(e.target.id === 'profileModal') closeProfileModal();
+      if(e.target.id === 'matchModal') closeMatchModal();
+    }
+
+    init();
+  </script>
+</body>
+</html>
