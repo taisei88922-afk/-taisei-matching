@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>オーナー受信箱 | Taisei Matching</title>
+  <style>
+    :root{font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans",sans-serif;color:#24212a;background:#fff7fb}
+    *{box-sizing:border-box}[hidden]{display:none!important}body{margin:0}header{padding:18px 24px;background:white;border-bottom:1px solid #f0d8e4;display:flex;justify-content:space-between;align-items:center}h1{font-size:21px;color:#ff3f77;margin:0}h2{font-size:19px;margin:0 0 16px}main{max-width:1100px;margin:28px auto;padding:0 18px}button{border:0;border-radius:14px;background:#ff3f77;color:white;padding:11px 18px;font:inherit;font-weight:700;cursor:pointer}button:disabled{opacity:.5;cursor:wait}.secondary{background:#fce5ee;color:#a32354}input{font:inherit;border:1px solid #e8cad7;border-radius:12px;padding:12px;min-width:0}form{display:flex;gap:8px;flex-wrap:wrap}.card{background:#fff;border:1px solid #f0d8e4;border-radius:20px;padding:20px;box-shadow:0 15px 35px #f5d6e344}.login{max-width:520px;margin:50px auto}.login input{flex:1}.layout{display:grid;grid-template-columns:310px 1fr;gap:18px}.list{max-height:70vh;overflow:auto}.item{display:block;width:100%;text-align:left;background:#fff;color:#24212a;border:1px solid #f0d8e4;margin:8px 0;padding:14px}.item.active{border-color:#ff3f77;background:#fff0f6}.item small{display:block;color:#777;margin-top:5px}.thread{min-height:430px;display:flex;flex-direction:column}.messages{flex:1;min-height:280px;max-height:62vh;overflow:auto;display:flex;flex-direction:column;gap:10px;padding:10px 0}.bubble{background:#f6f2f4;border-radius:15px;padding:10px 14px;max-width:85%;white-space:pre-wrap;overflow-wrap:anywhere}.bubble.owner{align-self:flex-end;background:#ffe2eb}.thread form input{flex:1}.notice{color:#6c5b65;font-size:14px}.error{color:#a11342;min-height:20px}@media(max-width:700px){.layout{display:block}.list{max-height:190px;margin-bottom:14px}.thread{min-height:400px}}
+  </style>
+</head>
+<body>
+  <header><h1>Taisei Matching · オーナー受信箱</h1><button id="logout" class="secondary" hidden>ログアウト</button></header>
+  <main>
+    <section id="login" class="card login" hidden>
+      <h2>オーナーログイン</h2><p class="notice">登録したメールアドレスに届く確認コードでログインします。</p>
+      <form id="request"><input id="email" type="email" placeholder="メールアドレス" autocomplete="email" required><button>コードを送る</button></form>
+      <form id="verify" hidden style="margin-top:12px"><input id="code" inputmode="numeric" pattern="[0-9]{6,8}" placeholder="確認コード" autocomplete="one-time-code" required><button>ログイン</button></form>
+      <p id="loginStatus" class="notice" role="status"></p>
+    </section>
+    <section id="inbox" class="layout" hidden>
+      <div class="card list"><h2>会話一覧</h2><div id="conversations"></div></div>
+      <div class="card thread"><h2 id="threadTitle">会話を選択してください</h2><div id="messages" class="messages"></div><form id="reply" hidden><input id="replyText" maxlength="500" placeholder="返信を入力" required><button>返信する</button></form><p id="inboxStatus" class="error" role="status"></p></div>
+    </section>
+  </main>
+  <script>
+    const $ = id => document.getElementById(id);
+    const names = {'rice-1':'ごはん好き','party-1':'飲み会','fit-1':'筋トレ','rice-2':'ラーメン','party-2':'しっぽり','fit-2':'健康志向','rice-3':'食べ歩き','party-3':'爆笑','fit-3':'努力家','beauty-1':'美意識','hinata-1':'日向','kanto-1':'関東地方の姿'};
+    let active = null;
+    async function api(path, data){
+      const response = await fetch(path, {credentials:'same-origin', ...(data ? {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)} : {})});
+      const json = await response.json().catch(()=>({}));
+      if(!response.ok) throw new Error(json.error || '通信できませんでした');
+      return json;
+    }
+    function showLogin(){ $('login').hidden=false; $('inbox').hidden=true; $('logout').hidden=true; }
+    function showInbox(){ $('login').hidden=true; $('inbox').hidden=false; $('logout').hidden=false; }
+    async function loadConversations(){
+      const {conversations}=await api('/api/owner-inbox');
+      $('conversations').replaceChildren();
+      if(!conversations.length) $('conversations').textContent='まだメッセージはありません。';
+      conversations.forEach((c, i)=>{
+        const button=document.createElement('button');button.className=`item ${c.id===active?'active':''}`;
+        button.textContent=`${names[c.profile_id]||'Taisei'}との会話 #${c.id.slice(0,6)}`;
+        const time=document.createElement('small');time.textContent=new Date(c.updated_at).toLocaleString('ja-JP');button.append(time);
+        button.onclick=()=>loadThread(c.id);$('conversations').append(button);
+      });
+    }
+    async function loadThread(id){
+      const {conversation,messages}=await api(`/api/owner-inbox?id=${encodeURIComponent(id)}`);
+      active=id;$('threadTitle').textContent=`${names[conversation.profile_id]||'Taisei'}との会話 #${id.slice(0,6)}`;
+      $('messages').replaceChildren();
+      messages.forEach(m=>{
+        const bubble=document.createElement('div');bubble.className=`bubble ${m.sender==='owner'?'owner':''}`;
+        bubble.textContent=`${m.sender==='owner'?'あなた':'訪問者'}: ${m.body}`;$('messages').append(bubble);
+      });
+      $('messages').scrollTop=$('messages').scrollHeight;$('reply').hidden=false;
+      loadConversations().catch(()=>{});
+    }
+    $('request').onsubmit=async e=>{
+      e.preventDefault();$('loginStatus').textContent='送信中…';
+      try{await api('/api/owner-auth',{action:'request',email:$('email').value});$('verify').hidden=false;$('loginStatus').textContent='メールに届いた確認コードを入力してください。';}
+      catch(err){$('loginStatus').textContent=err.message;}
+    };
+    $('verify').onsubmit=async e=>{
+      e.preventDefault();$('loginStatus').textContent='確認中…';
+      try{await api('/api/owner-auth',{action:'verify',email:$('email').value,code:$('code').value});showInbox();await loadConversations();}
+      catch(err){$('loginStatus').textContent=err.message;}
+    };
+    $('reply').onsubmit=async e=>{
+      e.preventDefault();const text=$('replyText').value.trim();if(!text||!active)return;
+      $('inboxStatus').textContent='';
+      try{await api('/api/owner-inbox',{id:active,text});$('replyText').value='';await loadThread(active);}
+      catch(err){$('inboxStatus').textContent=err.message;}
+    };
+    $('logout').onclick=async()=>{await api('/api/owner-auth',{action:'logout'});active=null;showLogin();};
+    loadConversations().then(showInbox).catch(showLogin);
+    setInterval(()=>{if(!$('inbox').hidden) (active?loadThread(active):loadConversations()).catch(()=>{});},15000);
+  </script>
+</body>
+</html>
