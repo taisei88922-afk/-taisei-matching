@@ -234,7 +234,7 @@
           <button class="btn btn-secondary" onclick="openProfileModal(currentDeck[0])">プロフィールを見る</button>
         </div>
         <div class="stats">
-        <div class="stat"><b id="statProfiles">12</b><span>おすすめプロフィール</span></div>
+        <div class="stat"><b id="statProfiles">6</b><span>おすすめプロフィール</span></div>
           <div class="stat"><b id="statLikes">0</b><span>あなたが送ったいいね数</span></div>
           <div class="stat"><b id="statMatches">0</b><span>マッチ成立数</span></div>
         </div>
@@ -291,7 +291,7 @@
                         <b>おすすめを自動補充</b>
                         <div style="color:var(--muted);font-size:13px">オンにすると、プロフィールを見終えてもおすすめが補充されます。</div>
                       </div>
-                      <label class="switch"><input id="infiniteToggle" type="checkbox" checked><span class="slider"></span></label>
+                      <label class="switch"><input id="infiniteToggle" type="checkbox"><span class="slider"></span></label>
                     </div>
                   </div>
                   <div class="profile-line"><b>年齢</b><span>22歳</span></div>
@@ -416,48 +416,6 @@
         desc:'ジムとごはんを両立したいストイックTAISEI。努力する人が好き。一緒に鍛えるのも、頑張りを褒め合うのも得意。',
         traits:['ジム','自分磨き','継続力','健康志向'],
         opener:'一緒に成長できる関係って、いいよね。'
-      },
-      {
-        id:'rice-2', name:'ラーメンTAISEI', age:22, city:'東京', photo:'food.jpg', mood:'ごはん',
-        tag:'🍜 ラーメン', short:'締めまで含めてデート。',
-        desc:'ごはん好きTAISEIの中でも特に麺寄り。ラーメンの湯気の向こうで恋したい。深夜の一杯も、昼の一杯も、全部ロマン。',
-        traits:['ラーメン','夜更かし','濃い味派','街ブラ'],
-        opener:'おすすめのラーメン、3つ教えて？'
-      },
-      {
-        id:'party-2', name:'しっぽりTAISEI', age:22, city:'東京', photo:'party.jpg', mood:'飲み',
-        tag:'🥃 しっぽり飲み', short:'騒ぐだけじゃなく、しっとりも可。',
-        desc:'賑やかな飲み会も好きだけど、二軒目でゆっくり語る時間も大事にしたいTAISEI。ちょっと真面目な話もできる。',
-        traits:['二軒目派','聞き上手','大人っぽい','距離感◎'],
-        opener:'最近、頑張ってることある？'
-      },
-      {
-        id:'fit-2', name:'健康志向TAISEI', age:22, city:'東京', photo:'fitness.jpg', mood:'筋トレ',
-        tag:'💪 健康第一', short:'ちゃんと寝て、ちゃんと食べたい。',
-        desc:'筋トレだけじゃなくて生活習慣そのものを整えたいTAISEI。朝活も散歩もわりと好き。長く付き合うならこういう人。',
-        traits:['朝活','散歩','筋トレ','丁寧な生活'],
-        opener:'朝の散歩デートとか、実はかなり好き。'
-      },
-      {
-        id:'rice-3', name:'食べ歩きTAISEI', age:22, city:'東京', photo:'food.jpg', mood:'ごはん',
-        tag:'🥟 食べ歩き', short:'お腹も心も満たしたい。',
-        desc:'気になる店を見つけたら入りたくなるタイプ。商店街、横丁、デパ地下、全部好き。デートは基本「食」が軸。',
-        traits:['商店街','餃子','食べ歩き','素直'],
-        opener:'一緒に次の行き先決めるの、楽しそう。'
-      },
-      {
-        id:'party-3', name:'爆笑TAISEI', age:22, city:'東京', photo:'party.jpg', mood:'飲み',
-        tag:'😂 爆笑担当', short:'笑い声、でかめです。',
-        desc:'とにかくよく笑うTAISEI。場の空気を柔らかくしたいタイプ。初対面でも変な顔で場を和ませる能力あり。',
-        traits:['爆笑','親しみやすい','ムードメーカー','距離近め'],
-        opener:'まずは笑って仲良くなろう。'
-      },
-      {
-        id:'fit-3', name:'努力家TAISEI', age:22, city:'東京', photo:'fitness.jpg', mood:'筋トレ',
-        tag:'🔥 努力家', short:'昨日の自分より、ちょっと前へ。',
-        desc:'小さな積み重ねを大事にするTAISEI。筋トレも仕事も、コツコツ型。恋愛もちゃんと向き合いたい。',
-        traits:['継続力','誠実','前向き','自己管理'],
-        opener:'お互いの目標、応援し合えたら最高。'
       },
       {
         id:'beauty-1', name:'美意識たいせい', age:22, city:'東京', photo:'beauty-taisei.jpg', mood:'美容',
