@@ -73,6 +73,11 @@
     .stack-wrap{padding:0 14px 10px}
     .card-stage{position:relative;height:540px}
     .card{position:absolute;inset:0;background:#ddd;border-radius:28px;overflow:hidden;box-shadow:0 24px 48px rgba(0,0,0,.16);transform-origin:center bottom;transition:transform .28s ease, opacity .28s ease}
+    .card[data-depth="0"]{touch-action:pan-y;cursor:grab;user-select:none}
+    .card.dragging{cursor:grabbing}
+    .swipe-stamp{position:absolute;top:76px;z-index:3;padding:8px 16px;border:4px solid currentColor;border-radius:10px;font-size:30px;font-weight:1000;letter-spacing:3px;opacity:0;pointer-events:none}
+    .swipe-stamp.like{left:24px;color:#55edaf;transform:rotate(-12deg)}
+    .swipe-stamp.skip{right:24px;color:#ff9fa5;transform:rotate(12deg)}
     .card img{width:100%;height:100%;object-fit:cover}
     .card::after{content:"";position:absolute;inset:42% 0 0;background:linear-gradient(transparent, rgba(0,0,0,.82))}
     .card[data-depth="1"]{transform:translateY(10px) scale(.97);opacity:.84}
@@ -253,7 +258,7 @@
                 <button class="action super" title="詳細" onclick="openProfileModal(currentDeck[0])">i</button>
                 <button class="action like" title="いいね" onclick="swipe('like')">♥</button>
               </div>
-              <div class="helper">気になる相手には「いいね」。プロフィールをタップすると詳細が見られます。</div>
+              <div class="helper">右にスワイプでいいね、左でスキップ。タップすると詳細が見られます。</div>
             </section>
 
             <section class="view" data-view="likes">
@@ -484,6 +489,7 @@
     let activeChatId = null;
     let swipeCount = 0;
     let revealShown = false;
+    let swipeAnimating = false;
     const chatState = {};
     const conversationState = {};
 
@@ -559,6 +565,7 @@
         card.setAttribute('data-depth', actualIndex);
         card.innerHTML = `
           <img src="${profile.photo}" alt="${profile.name}">
+          ${actualIndex === 0 ? '<div class="swipe-stamp like" aria-hidden="true">LIKE</div><div class="swipe-stamp skip" aria-hidden="true">SKIP</div>' : ''}
           <div class="tag">${profile.tag}</div>
           <div class="card-content">
             <h3>Taisei <small>${profile.age} / ${profile.city}</small></h3>
@@ -568,12 +575,74 @@
             </div>
           </div>
         `;
-        card.onclick = () => openProfileModal(profile);
+        if(actualIndex === 0) enableSwipe(card, profile);
         cardStage.appendChild(card);
       });
     }
 
+    function enableSwipe(card, profile){
+      let startX = 0, startY = 0, dragX = 0, dragY = 0, pointerId = null, dragged = false, suppressClickUntil = 0;
+      const likeStamp = card.querySelector('.swipe-stamp.like');
+      const skipStamp = card.querySelector('.swipe-stamp.skip');
+      function reset(){
+        card.classList.remove('dragging');
+        card.style.transition = '';
+        card.style.transform = '';
+        likeStamp.style.opacity = skipStamp.style.opacity = '';
+      }
+      card.addEventListener('pointerdown', e => {
+        if(swipeAnimating || pointerId !== null || (e.pointerType === 'mouse' && e.button !== 0)) return;
+        pointerId = e.pointerId;
+        startX = e.clientX; startY = e.clientY;
+        dragX = dragY = 0; dragged = false;
+        card.setPointerCapture(e.pointerId);
+      });
+      card.addEventListener('pointermove', e => {
+        if(e.pointerId !== pointerId || swipeAnimating) return;
+        dragX = e.clientX - startX;
+        dragY = e.clientY - startY;
+        if(Math.abs(dragX) < 8 || Math.abs(dragX) < Math.abs(dragY)) return;
+        dragged = true;
+        card.classList.add('dragging');
+        card.style.transition = 'none';
+        card.style.transform = `translate(${dragX}px, ${dragY * .18}px) rotate(${dragX * .035}deg)`;
+        likeStamp.style.opacity = dragX > 0 ? Math.min(1, dragX / 110) : 0;
+        skipStamp.style.opacity = dragX < 0 ? Math.min(1, -dragX / 110) : 0;
+      });
+      card.addEventListener('pointerup', e => {
+        if(e.pointerId !== pointerId) return;
+        pointerId = null;
+        if(!dragged){ reset(); return; }
+        suppressClickUntil = Date.now() + 350;
+        const threshold = Math.min(110, card.clientWidth * .26);
+        if(Math.abs(dragX) < threshold || Math.abs(dragX) < Math.abs(dragY)){
+          reset(); return;
+        }
+        const direction = dragX > 0 ? 1 : -1;
+        swipeAnimating = true;
+        card.classList.remove('dragging');
+        card.style.transition = 'transform .2s ease-out, opacity .2s ease-out';
+        card.style.transform = `translateX(${direction * (card.clientWidth + 180)}px) rotate(${direction * 22}deg)`;
+        card.style.opacity = '0';
+        setTimeout(() => {
+          swipeAnimating = false;
+          if(currentDeck[0]?.id === profile.id) swipe(direction > 0 ? 'like' : 'skip');
+        }, 200);
+      });
+      card.addEventListener('pointercancel', e => {
+        if(e.pointerId !== pointerId) return;
+        pointerId = null;
+        suppressClickUntil = dragged ? Date.now() + 350 : 0;
+        reset();
+      });
+      card.addEventListener('click', () => {
+        if(Date.now() < suppressClickUntil) return;
+        if(!swipeAnimating) openProfileModal(profile);
+      });
+    }
+
     function swipe(type){
+      if(swipeAnimating) return;
       if(!currentDeck.length){ ensureDeck(); return; }
       const top = currentDeck[0];
       if(type === 'like'){
